@@ -1,0 +1,13 @@
+# Secrets
+.env
+.env.local
+*.env
+
+# Python
+__pycache__/
+*.pyc
+
+# Docker
+.docker_data/
+
+.history/

@@ -1,0 +1,24 @@
+services:
+  analyzer:
+    build: .
+    command: python main.py analyze
+    env_file: .env
+    volumes:
+      - shared_data:/app/data
+      - ./src:/app/src
+    environment:
+      - GEMINI_API_KEY
+  dashboard:
+    build: .
+    command: python main.py dashboard
+    ports:
+      - "8501:8501"
+    env_file: .env
+    volumes:
+      - shared_data:/app/data
+      - ./src:/app/src
+    depends_on:
+      - analyzer
+volumes:
+  shared_data:
+    name: shared_data

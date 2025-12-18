@@ -1,0 +1,15 @@
+ingestion_task:
+  description: >
+    Run the Simulated Data Generator tool. 
+    Fetch the last 90 days of Jira and GitHub data.
+  expected_output: >
+    A raw JSON string containing 'jira_tickets' and 'github_prs'.
+
+analysis_task:
+  description: >
+    Take the raw data from the ingestion task.
+    Use the Metrics Calculator tool to process it.
+    Calculate the Ghost Work percentage and Ticket Churn counts.
+  expected_output: >
+    A valid JSON string containing keys: 'summary', 'raw_tickets', and 'raw_prs'.
+    Do NOT include markdown formatting.

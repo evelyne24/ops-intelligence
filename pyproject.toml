@@ -1,0 +1,21 @@
+[project]
+name = "ops-intelligence"
+version = "0.1.0"
+description = "Agentic Operational Intelligence System"
+requires-python = ">=3.11"
+dependencies = [
+    "crewai",
+    "langchain-google-genai",
+    "pandas",
+    "streamlit",
+    "plotly",
+    "faker",
+    "python-dotenv",
+    "click",
+    "crewai_tools"
+]
+
+[tool.setuptools]
+packages = ["ops_intelligence"]
+package-dir = {"" = "src"}
+include-package-data = true
