@@ -1,55 +1,44 @@
-# Location: /ops-intelligence/main.py (ROOT)
 import click
 import subprocess
 import os
-from dotenv import load_dotenv
-import time
-
-# CORRECT IMPORT: Notice we do NOT say 'src.ops_intelligence'
+from datetime import datetime
 from ops_intelligence.crew import OpsIntelligenceCrew
-
-load_dotenv()
+from ops_intelligence.aws import S3Client
 
 @click.group()
 def cli():
-    """Agentic Ops Intelligence System"""
     pass
 
 @cli.command()
 def analyze():
-    """Run the AI Agents to simulate and analyze data."""
+    """Run Agent -> Timestamp -> Upload to S3"""
     print("🚀 Kicking off CrewAI Agents...")
     
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            OpsIntelligenceCrew().crew().kickoff()
-            print("✅ Analysis Complete.")
-            return # Exit successfully
-        except Exception as e:
-            if "503" in str(e) or "overloaded" in str(e).lower():
-                wait_time = (attempt + 1) * 5 # Wait 5s, then 10s, then 15s
-                print(f"⚠️ Model overloaded. Retrying in {wait_time} seconds... (Attempt {attempt + 1}/{max_retries})")
-                time.sleep(wait_time)
-            else:
-                # If it's a real code error, crash immediately
-                raise e
+    # 1. Run Crew
+    result = OpsIntelligenceCrew().crew().kickoff()
+    result_str = str(result)
     
-    print("❌ Failed after multiple retries. Please try again later.")
+    # 2. Generate Timestamped Filename
+    # Format: run_YYYY-MM-DD_HH-MM-SS.json
+    filename = f"run_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json"
+    
+    # 3. Upload to LocalStack S3
+    print(f"☁️  Uploading {filename} to S3...")
+    s3 = S3Client()
+    s3.upload_string(result_str, filename)
+    
+    print("✅ Analysis Complete & Persisted.")
 
 @cli.command()
 def dashboard():
-    """Launch the Web Dashboard."""
-    print("📊 Starting Streamlit Dashboard...")
-    
-    # We use 'sys.executable' or direct command to ensure we use the correct env
-    # Note: Streamlit needs the path to the file.
-    dashboard_path = os.path.join("src", "web", "dashboard.py")
-    
+    """Launch Streamlit with config fixes"""
+    path = os.path.join("src", "web", "dashboard.py")
     subprocess.run([
-        "streamlit", "run", dashboard_path,
+        "python", "-m", "streamlit", "run", path,
         "--server.port=8501", 
-        "--server.address=0.0.0.0"
+        "--server.address=0.0.0.0",
+        "--server.enableCORS=false",
+        "--server.enableXsrfProtection=false"
     ])
 
 if __name__ == "__main__":

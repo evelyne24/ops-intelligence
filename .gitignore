@@ -11,3 +11,7 @@ __pycache__/
 .docker_data/
 
 .history/
+build/
+
+crew_execution.log*
+dashboard_data.json

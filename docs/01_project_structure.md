@@ -4,12 +4,12 @@ This document provides an overview of the project structure, Docker setup, and d
 
 ## High-Level Architecture
 
-The project is an "Agentic Operational Intelligence System" designed to analyze operational data and present it through a web dashboard. It consists of two main services orchestrated by Docker Compose:
+The project is an "Agentic Operational Intelligence System" designed to analyze operational data from a version control system (like Git) and a project management tool (like Jira) and present it through a web dashboard. It consists of two main services orchestrated by Docker Compose:
 
 1.  **`analyzer`**: A batch job that runs a `crewai`-based agentic crew to perform data analysis.
 2.  **`dashboard`**: A Streamlit web application that visualizes the results from the `analyzer`.
 
-These services communicate via a shared Docker volume named `shared_data`.
+These services communicate via **AWS S3** (or a local equivalent like LocalStack). The `analyzer` uploads its results to an S3 bucket, and the `dashboard` reads from it.
 
 ## Directory Structure
 
@@ -17,13 +17,14 @@ These services communicate via a shared Docker volume named `shared_data`.
 ops-intelligence/
 ├── .devcontainer/
 │   └── devcontainer.json   # VS Code Dev Container configuration
-├── .env                    # Environment variables
+├── .env.example            # Example environment variables
 ├── .gitignore
 ├── docker-compose.yml      # Docker Compose for service orchestration
 ├── Dockerfile              # Docker image definition for the services
+├── init-aws.sh             # Script to initialize LocalStack resources
+├── main.py                 # Entry point for the application (CLI)
 ├── pyproject.toml          # Python project metadata and dependencies
 ├── README.md
-├── requirements.txt        # Python dependencies
 ├── docs/                   # Project documentation
 └── src/
     ├── ops_intelligence/   # Source code for the 'analyzer' service
@@ -31,8 +32,7 @@ ops-intelligence/
     │   │   ├── agents.yaml # Agent definitions
     │   │   └── tasks.yaml  # Task definitions
     │   ├── tools/          # Custom tools for agents
-    │   ├── crew.py         # Crew definition and task orchestration
-    │   └── main.py         # Entry point for the application (CLI)
+    │   └── crew.py         # Crew definition and task orchestration
     └── web/
         └── dashboard.py    # Source code for the Streamlit 'dashboard'
 ```
@@ -45,38 +45,41 @@ The entire application is containerized, and the setup is defined in `Dockerfile
 
 #### `Dockerfile`
 
-The `Dockerfile` defines the common image for both the `analyzer` and `dashboard` services. It starts from a Python 3.11 base image, installs the dependencies listed in `requirements.txt`, and sets up the working directory.
+The `Dockerfile` defines the common image for both the `analyzer` and `dashboard` services. It starts from a Python 3.11 base image, installs the dependencies from `pyproject.toml` (via Poetry), and sets up the working directory.
 
 #### `docker-compose.yml`
 
 The `docker-compose.yml` file orchestrates the multi-service application:
 
 -   **`analyzer` service**:
-    -   Builds from the `Dockerfile` in the current directory.
-    -   Runs the command `python -m src.ops_intelligence.main analyze` to start the analysis process.
-    -   Mounts the `shared_data` volume to `/app/data` to store the output JSON.
-    -   Mounts the `src` directory into the container for development.
+    -   Builds from the `Dockerfile`.
+    -   Runs the command `python main.py analyze` to start the analysis process.
+    -   Connects to the `localstack` service for AWS emulation.
+    -   Mounts the `src` directory into the container.
 
 -   **`dashboard` service**:
     -   Also builds from the same `Dockerfile`.
-    -   Runs the command `python -m src.ops_intelligence.main dashboard` to start the web server.
-    -   Depends on the `analyzer` service to ensure the analysis runs first.
+    -   Runs the command `python main.py dashboard` to start the web server.
     -   Exposes port `8501` for the Streamlit dashboard.
-    -   Mounts the `shared_data` volume to `/app/data` to read the analysis results.
+    -   Connects to the `localstack` service.
     -   Mounts the `src` directory into the container.
 
--   **`shared_data` volume**:
-    -   A named volume that enables data sharing between the `analyzer` and `dashboard` services.
+-   **`localstack` service**:
+    -   Provides local emulation of AWS services (like S3).
+    -   Persists data in a Docker volume named `localstack_data`.
+    -   Exposes the LocalStack dashboard on port `8080`.
+
+-   **`init-aws` service**:
+    -   A one-off job that runs the `init-aws.sh` script to create the S3 bucket on startup.
 
 ### Development Environment (Dev Containers)
 
-The `.devcontainer/devcontainer.json` file provides a configuration for Visual Studio Code to develop inside a container. This ensures a consistent and reproducible development environment.
+The `.devcontainer/devcontainer.json` file configures VS Code to develop inside a container.
 
--   It uses the `docker-compose.yml` to define the environment.
--   It specifies the `dashboard` service as the one to connect to.
--   It forwards port `8501` for accessing the dashboard.
--   It sets the sleep command to `infinity` to keep the container running.
--   It installs the recommended Python extension for VS Code.
+-   It uses the `docker-compose.yml` to define the environment, connecting to the `dashboard` service.
+-   It forwards ports `8501` (dashboard) and `8080` (LocalStack UI).
+-   It keeps the container running with an infinite sleep command.
+-   It installs the recommended Python extension.
 
 ## How to Run and Debug
 
@@ -88,20 +91,20 @@ To run the entire application, use Docker Compose:
 docker compose up
 ```
 
-This will first run the `analyzer` service. Once it completes, the `dashboard` service will start, and you can access the web interface at [http://localhost:8501](http://localhost:8501).
+This will start all services. The `analyzer` will run, and then you can access the `dashboard` at [http://localhost:8501](http://localhost:8501).
 
 ### Running Services Individually
 
-You can also run the services individually using the CLI defined in `src/ops_intelligence/main.py`.
+You can also run the services individually using the CLI in `main.py`:
 
 -   **To run the analysis:**
     ```bash
-    python -m main analyze
+    python main.py analyze
     ```
 
 -   **To run the dashboard:**
     ```bash
-    python -m main dashboard
+    python main.py dashboard
     ```
 
 ### Debugging

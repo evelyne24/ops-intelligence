@@ -59,10 +59,10 @@ The agents execute two sequential tasks defined in `src/ops_intelligence/crew.py
 
 -   **Description**: Run the `EngineeringSimulatorTool` to fetch the last 90 days of Jira and GitHub data.
 -   **Expected Output**: A raw JSON string containing `jira_tickets` and `github_prs`.
--   **Assigned Agent (inferred)**: `data_engineer`
+-   **Assigned Agent**: `data_engineer`
 
 ### `analysis_task`
 
 -   **Description**: Take the raw data from the ingestion task and use the `MetricsCalculatorTool` to process it, calculating the Ghost Work percentage and Ticket Churn counts.
 -   **Expected Output**: A valid JSON string containing the keys: `summary`, `raw_tickets`, and `raw_prs`.
--   **Assigned Agent (inferred)**: `ops_analyst`
+-   **Assigned Agent**: `ops_analyst`

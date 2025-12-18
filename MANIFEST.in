@@ -1,1 +1,0 @@
-recursive-include src/ops_intelligence/config *.yaml

@@ -1,24 +1,47 @@
 services:
+  # 1. LocalStack (Simulated AWS S3)
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+    volumes:
+      # Script to create bucket on startup
+      - ./init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh
+
+  # 2. Analyzer (Producer)
   analyzer:
     build: .
     command: python main.py analyze
-    env_file: .env
-    volumes:
-      - shared_data:/app/data
-      - ./src:/app/src
+    depends_on:
+      - localstack
     environment:
       - GEMINI_API_KEY
+      # AWS Config (Points to LocalStack)
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - S3_BUCKET_NAME=ops-data
+    volumes:
+      - .:/app
+
+  # 3. Dashboard (Consumer)
   dashboard:
     build: .
     command: python main.py dashboard
+    depends_on:
+      - localstack
     ports:
       - "8501:8501"
-    env_file: .env
+    environment:
+      - GEMINI_API_KEY
+      # AWS Config (Points to LocalStack)
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - S3_BUCKET_NAME=ops-data
     volumes:
-      - shared_data:/app/data
-      - ./src:/app/src
-    depends_on:
-      - analyzer
-volumes:
-  shared_data:
-    name: shared_data
+      - .:/app

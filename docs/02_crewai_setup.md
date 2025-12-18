@@ -11,11 +11,15 @@ The `OpsIntelligenceCrew` class inherits from `CrewBase` and defines the compone
 class OpsIntelligenceCrew:
     """OpsIntelligence crew"""
     
-    # Paths to YAML configs
     agents_config = 'config/agents.yaml'
     tasks_config = 'config/tasks.yaml'
 
-    # ... (initialization)
+    def __init__(self):
+        self.gemini_llm = LLM(
+            model="gemini/gemini-2.5-flash-lite",
+            api_key=os.getenv("GEMINI_API_KEY"),
+            temperature=0.2
+        )
 
     @agent
     def data_engineer(self) -> Agent:
@@ -40,25 +44,25 @@ class OpsIntelligenceCrew:
 
 ## Language Model
 
-The crew uses the `gemini/gemini-pro` model from Google, configured in the `__init__` method of the `OpsIntelligenceCrew` class. The API key is retrieved from the `GEMINI_API_KEY` environment variable.
+The crew uses the `gemini/gemini-2.5-flash-lite` model from Google, configured in the `__init__` method of the `OpsIntelligenceCrew` class. The API key is retrieved from the `GEMINI_API_KEY` environment variable, and the `temperature` is set to `0.2` for more predictable outputs.
 
 ## Agents
 
 The crew consists of two agents, each with a specific role:
 
-1.  **`data_engineer`**: This agent is responsible for data ingestion. It uses the `EngineeringSimulatorTool`.
-2.  **`ops_analyst`**: This agent is responsible for analyzing the data and calculating metrics. It uses the `MetricsCalculatorTool`.
+1.  **`data_engineer`**: Responsible for data ingestion, using the `EngineeringSimulatorTool`.
+2.  **`ops_analyst`**: Responsible for analyzing the data and calculating metrics, using the `MetricsCalculatorTool`.
 
-The configurations for these agents (their role, goal, and backstory) are loaded from the `config/agents.yaml` file.
+The configurations for these agents (role, goal, backstory) are loaded from `config/agents.yaml`.
 
 ## Tasks
 
 The crew performs two sequential tasks:
 
-1.  **`ingestion_task`**: This is the first task, likely handled by the `data_engineer` agent to simulate or fetch engineering data.
-2.  **`analysis_task`**: This task follows the ingestion task. It is likely performed by the `ops_analyst` to process the data and generate insights. The output of this task is saved to a file named `dashboard_data.json`.
+1.  **`ingestion_task`**: Handled by the `data_engineer` agent to simulate engineering data.
+2.  **`analysis_task`**: Performed by the `ops_analyst` to process the data and generate insights. The output of this task is saved to a file named `dashboard_data.json` in the project's root directory.
 
-The descriptions for these tasks are loaded from the `config/tasks.yaml` file.
+The descriptions for these tasks are loaded from `config/tasks.yaml`.
 
 ## Crew Execution
 
@@ -68,11 +72,12 @@ The `crew` method defines the crew's execution process.
     @crew
     def crew(self) -> Crew:
         return Crew(
-            agents=self.agents,
-            tasks=self.tasks,
+            agents=[self.data_engineer(), self.ops_analyst()],
+            tasks=[self.ingestion_task(), self.analysis_task()],
             process=Process.sequential,
             verbose=True,
+            output_log_file="crew_execution.log"
         )
 ```
 
-The crew is configured to run in a sequential process, meaning the tasks are executed one after the other in the order they are defined. The `verbose=True` setting ensures detailed logging of the crew's execution.
+The crew is configured to run in a sequential process. `verbose=True` ensures detailed logging, and the execution log is saved to `crew_execution.log`.

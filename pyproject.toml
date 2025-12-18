@@ -5,6 +5,7 @@ description = "Agentic Operational Intelligence System"
 requires-python = ">=3.11"
 dependencies = [
     "crewai",
+    "crewai_tools",
     "langchain-google-genai",
     "pandas",
     "streamlit",
@@ -12,7 +13,8 @@ dependencies = [
     "faker",
     "python-dotenv",
     "click",
-    "crewai_tools"
+    "boto3",
+    "pytest"
 ]
 
 [tool.setuptools]

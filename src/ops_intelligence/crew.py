@@ -1,8 +1,8 @@
 import os
 from crewai import Agent, Crew, Process, Task, LLM
 from crewai.project import CrewBase, agent, crew, task
-from src.ops_intelligence.tools.simulator import EngineeringSimulatorTool
-from src.ops_intelligence.tools.calculator import MetricsCalculatorTool
+from ops_intelligence.tools.simulator import EngineeringSimulatorTool
+from ops_intelligence.tools.calculator import MetricsCalculatorTool
 from pathlib import Path
 
 @CrewBase

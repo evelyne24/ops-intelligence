@@ -1,12 +1,11 @@
 {
   "name": "Ops Intelligence Dev",
-  "build": { "dockerfile": "../Dockerfile" },
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "analyzer",
+  "workspaceFolder": "/app",
   "customizations": {
     "vscode": {
-      "extensions": [
-        "ms-python.python",
-        "ms-python.vscode-pylance"
-      ]
+      "extensions": ["ms-python.python"]
     }
   },
   "remoteEnv": {
